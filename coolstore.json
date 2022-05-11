@@ -1,0 +1,2912 @@
+{
+    "kind": "List",
+    "apiVersion": "v1",
+    "metadata": {},
+    "items": [
+        {
+            "apiVersion": "authorization.openshift.io/v1",
+            "groupNames": null,
+            "kind": "RoleBinding",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "default_edit"
+            },
+            "roleRef": {
+                "name": "view"
+            },
+            "subjects": [
+                {
+                    "kind": "ServiceAccount",
+                    "name": "default"
+                }
+            ]
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "web-ui",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "web-ui"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "app": "web-ui",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "web-ui"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "web-ui:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "coolstore-ui",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "NPM_MIRROR",
+                                "value": ""
+                            },
+                            {
+                                "name": "BOWER_MIRROR",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "nodejs:4",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "web-ui",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "web-ui"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "app": "web-ui",
+                    "deploymentconfig": "web-ui"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "web-ui",
+                            "deploymentconfig": "web-ui"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "COOLSTORE_GW_SERVICE",
+                                        "value": "coolstore-gw"
+                                    },
+                                    {
+                                        "name": "HOSTNAME_HTTP",
+                                        "value": "web-ui:8080"
+                                    }
+                                ],
+                                "image": "web-ui",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 5
+                                },
+                                "name": "web-ui",
+                                "ports": [
+                                    {
+                                        "containerPort": 8080,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {},
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 30
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "web-ui"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "web-ui:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "web-ui",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "web-ui"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "8080-tcp",
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "web-ui"
+                }
+            }
+        },
+        {
+            "apiVersion": "route.openshift.io/v1",
+            "kind": "Route",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "web-ui"
+            },
+            "spec": {
+                "to": {
+                    "kind": "Service",
+                    "name": "web-ui"
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "coolstore-gw",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "coolstore-gw"
+            },
+            "spec": {},
+            "status": {
+                "dockerImageRepository": ""
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "app": "coolstore-gw",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "coolstore-gw"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "coolstore-gw:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "coolstore-gw",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_ARGS",
+                                "value": "package -DskipTests -Dfabric8.skip -e -B -Pearly-access-repo"
+                            },
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "forcePull": true,
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "fis-java-openshift:2.0",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "coolstore-gw",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "coolstore-gw"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "coolstore-gw"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "coolstore-gw",
+                            "deploymentconfig": "coolstore-gw"
+                        },
+                        "name": "coolstore-gw"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "KUBERNETES_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "image": "library/coolstore-gw:latest",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8081
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10
+                                },
+                                "name": "coolstore-gw",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8081
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10
+                                },
+                                "resources": {}
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "coolstore-gw"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "coolstore-gw:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "coolstore-gw",
+                    "demo": "coolstore-microservice",
+                    "hystrix.enabled": "true",
+                    "template": "coolstore"
+                },
+                "name": "coolstore-gw"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "coolstore-gw"
+                }
+            }
+        },
+        {
+            "apiVersion": "route.openshift.io/v1",
+            "kind": "Route",
+            "metadata": {
+                "labels": {
+                    "app": "coolstore-gw",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "coolstore-gw"
+            },
+            "spec": {
+                "to": {
+                    "kind": "Service",
+                    "name": "coolstore-gw"
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "inventory",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "app": "inventory",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "inventory:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "inventory-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "jboss-eap70-openshift:1.5",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "inventory",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "inventory"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "inventory",
+                            "deploymentconfig": "inventory"
+                        },
+                        "name": "inventory"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "OPENSHIFT_KUBE_PING_LABELS",
+                                        "value": "application=inventory"
+                                    },
+                                    {
+                                        "name": "OPENSHIFT_KUBE_PING_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "MQ_CLUSTER_PASSWORD",
+                                        "value": "7mzX0pLV03"
+                                    },
+                                    {
+                                        "name": "JGROUPS_CLUSTER_PASSWORD",
+                                        "value": "CqUo3fYDTv"
+                                    },
+                                    {
+                                        "name": "AUTO_DEPLOY_EXPLODED",
+                                        "value": "false"
+                                    },
+                                    {
+                                        "name": "DB_SERVICE_PREFIX_MAPPING",
+                                        "value": "inventory-postgresql=DB"
+                                    },
+                                    {
+                                        "name": "DB_JNDI",
+                                        "value": "java:jboss/datasources/InventoryDS"
+                                    },
+                                    {
+                                        "name": "DB_USERNAME",
+                                        "value": "user4it"
+                                    },
+                                    {
+                                        "name": "DB_PASSWORD",
+                                        "value": "Lq0milLV"
+                                    },
+                                    {
+                                        "name": "DB_DATABASE",
+                                        "value": "inventorydb"
+                                    }
+                                ],
+                                "image": "inventory",
+                                "imagePullPolicy": "Always",
+                                "lifecycle": {
+                                    "preStop": {
+                                        "exec": {
+                                            "command": [
+                                                "/opt/eap/bin/jboss-cli.sh",
+                                                "-c",
+                                                ":shutdown(timeout=60)"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 60,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 5
+                                },
+                                "name": "inventory",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8888,
+                                        "name": "ping",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 60,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "1Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "512Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "inventory"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "inventory:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "service.alpha.openshift.io/dependencies": "[{\"name\":\"inventory-postgresql\",\"namespace\":\"\",\"kind\":\"Service\"}]"
+                },
+                "labels": {
+                    "app": "inventory",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "inventory"
+                }
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "inventory",
+                    "comp-type": "database",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory-postgresql"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "inventory-postgresql"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "inventory",
+                            "comp-type": "database",
+                            "deploymentconfig": "inventory-postgresql"
+                        },
+                        "name": "inventory-postgresql"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "POSTGRESQL_USER",
+                                        "value": "user4it"
+                                    },
+                                    {
+                                        "name": "POSTGRESQL_PASSWORD",
+                                        "value": "Lq0milLV"
+                                    },
+                                    {
+                                        "name": "POSTGRESQL_DATABASE",
+                                        "value": "inventorydb"
+                                    }
+                                ],
+                                "image": "postgresql",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "initialDelaySeconds": 30,
+                                    "tcpSocket": {
+                                        "port": 5432
+                                    },
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "inventory-postgresql",
+                                "ports": [
+                                    {
+                                        "containerPort": 5432,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/sh",
+                                            "-i",
+                                            "-c",
+                                            "psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'"
+                                        ]
+                                    },
+                                    "initialDelaySeconds": 5,
+                                    "timeoutSeconds": 1
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/var/lib/pgsql/data",
+                                        "name": "inventory-postgresql-data"
+                                    }
+                                ]
+                            }
+                        ],
+                        "terminationGracePeriodSeconds": 60,
+                        "volumes": [
+                            {
+                                "emptyDir": {},
+                                "name": "inventory-postgresql-data"
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "inventory-postgresql"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "postgresql:latest",
+                                "namespace": "openshift"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "inventory",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "inventory-postgresql"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 5432,
+                        "targetPort": 5432
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "inventory-postgresql"
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "catalog",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "catalog:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "catalog-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "jboss-webserver31-tomcat8-openshift:1.0",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "catalog",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "catalog"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "catalog",
+                            "deploymentconfig": "catalog"
+                        },
+                        "name": "catalog"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "JWS_ADMIN_USERNAME",
+                                        "value": "Skq3VtCd"
+                                    },
+                                    {
+                                        "name": "JWS_ADMIN_PASSWORD",
+                                        "value": "oktt6yhw"
+                                    },
+                                    {
+                                        "name": "DB_USERNAME",
+                                        "value": "userIy0"
+                                    },
+                                    {
+                                        "name": "DB_PASSWORD",
+                                        "value": "64X1bpDM"
+                                    },
+                                    {
+                                        "name": "DB_NAME",
+                                        "value": "catalogdb"
+                                    },
+                                    {
+                                        "name": "DB_SERVER",
+                                        "value": "catalog-mongodb"
+                                    }
+                                ],
+                                "image": "catalog",
+                                "imagePullPolicy": "Always",
+                                "name": "catalog",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/bash",
+                                            "-c",
+                                            "curl -s -u Skq3VtCd:oktt6yhw 'http://localhost:8080/manager/jmxproxy/?get=Catalina%3Atype%3DServer\u0026att=stateName' |grep -iq 'stateName *= *STARTED'"
+                                        ]
+                                    },
+                                    "failureThreshold": 10,
+                                    "initialDelaySeconds": 15,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "600Mi"
+                                    },
+                                    "requests": {
+                                        "memory": "200Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "catalog"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "catalog:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "service.alpha.openshift.io/dependencies": "[{\"name\":\"catalog-mongodb\",\"namespace\":\"\",\"kind\":\"Service\"}]"
+                },
+                "labels": {
+                    "app": "catalog",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "catalog"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "catalog",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog-mongodb"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "mongo",
+                        "port": 27017,
+                        "protocol": "TCP",
+                        "targetPort": 27017
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "catalog-mongodb"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "catalog",
+                    "comp-type": "database",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "catalog-mongodb"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "catalog-mongodb"
+                },
+                "strategy": {
+                    "recreateParams": {
+                        "timeoutSeconds": 600
+                    },
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "catalog",
+                            "comp-type": "database",
+                            "deploymentconfig": "catalog-mongodb"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "KUBERNETES_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "MONGODB_USER",
+                                        "value": "userIy0"
+                                    },
+                                    {
+                                        "name": "MONGODB_PASSWORD",
+                                        "value": "64X1bpDM"
+                                    },
+                                    {
+                                        "name": "MONGODB_DATABASE",
+                                        "value": "catalogdb"
+                                    },
+                                    {
+                                        "name": "MONGODB_ADMIN_PASSWORD",
+                                        "value": "64X1bpDM"
+                                    }
+                                ],
+                                "image": "mongodb",
+                                "imagePullPolicy": "IfNotPresent",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "tcpSocket": {
+                                        "port": 27017
+                                    },
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "catalog-mongodb",
+                                "ports": [
+                                    {
+                                        "containerPort": 27017,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/sh",
+                                            "-i",
+                                            "-c",
+                                            "mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD --eval=\"quit()\""
+                                        ]
+                                    },
+                                    "failureThreshold": 10,
+                                    "initialDelaySeconds": 3,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "512Mi"
+                                    }
+                                },
+                                "securityContext": {
+                                    "capabilities": {},
+                                    "privileged": false
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/var/lib/mongodb/data",
+                                        "name": "mongodb-data"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 30,
+                        "volumes": [
+                            {
+                                "emptyDir": {},
+                                "name": "mongodb-data"
+                            }
+                        ]
+                    }
+                },
+                "test": false,
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "catalog-mongodb"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "mongodb:3.2",
+                                "namespace": "openshift"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "rating",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "rating:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "rating-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "redhat-openjdk18-openshift:1.1",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "rating",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "deploymentconfig": "rating"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "rating",
+                            "deploymentconfig": "rating"
+                        },
+                        "name": "rating"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "KUBERNETES_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "image": "rating",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "failureThreshold": 2,
+                                    "httpGet": {
+                                        "path": "/health/liveness",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 60,
+                                    "periodSeconds": 10,
+                                    "successThreashold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "rating",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 3,
+                                    "httpGet": {
+                                        "path": "/health/readiness",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 10,
+                                    "periodSeconds": 10,
+                                    "successThreashold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "1Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "200Mi"
+                                    }
+                                }
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75,
+                        "terminationMessagePath": "/dev/termination-log"
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "rating"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "rating:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "service.alpha.openshift.io/dependencies": "[{\"name\":\"rating-mongodb\",\"namespace\":\"\",\"kind\":\"Service\"}]"
+                },
+                "labels": {
+                    "app": "rating",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "rating"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "rating",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating-mongodb"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "mongo",
+                        "port": 27017,
+                        "protocol": "TCP",
+                        "targetPort": 27017
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "rating-mongodb"
+                },
+                "sessionAffinity": "None",
+                "type": "ClusterIP"
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "rating",
+                    "comp-type": "database",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating-mongodb"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "deploymentconfig": "rating-mongodb"
+                },
+                "strategy": {
+                    "recreateParams": {
+                        "post": {
+                            "execNewPod": {
+                                "command": [
+                                    "/bin/sh",
+                                    "-i",
+                                    "-c",
+                                    "env \u0026\u0026 while ! mongo ${RATING_MONGODB_SERVICE_HOST}:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD --eval=\"$MONGODB_INIT\" \u003e /dev/null 2\u003e\u00261; do echo \"waiting for mongo ...\"; sleep 5; done"
+                                ],
+                                "containerName": "rating-mongodb",
+                                "env": [
+                                    {
+                                        "name": "MONGODB_INIT",
+                                        "value": "db.ratings.insert({\"_id\":\"329299\",\"itemId\":\"329299\",\"rating\":5.0,\"count\":1}); db.ratings.insert({\"_id\":\"329199\",\"itemId\":\"329199\",\"rating\":1.0,\"count\":12}); db.ratings.insert({\"_id\":\"165613\",\"itemId\":\"165613\",\"rating\":2.3,\"count\":31}); db.ratings.insert({\"_id\":\"165614\",\"itemId\":\"165614\",\"rating\":3.0,\"count\":51}); db.ratings.insert({\"_id\":\"165954\",\"itemId\":\"165954\",\"rating\":4.0,\"count\":66}); db.ratings.insert({\"_id\":\"444434\",\"itemId\":\"444434\",\"rating\":5.0,\"count\":76}); db.ratings.insert({\"_id\":\"444435\",\"itemId\":\"444435\",\"rating\":4.0,\"count\":83}); db.ratings.insert({\"_id\":\"444436\",\"itemId\":\"444436\",\"rating\":3.0,\"count\":123});"
+                                    }
+                                ]
+                            },
+                            "failurePolicy": "ignore"
+                        },
+                        "timeoutSeconds": 600
+                    },
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "rating",
+                            "comp-type": "database",
+                            "deploymentconfig": "rating-mongodb"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "KUBERNETES_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "MONGODB_USER",
+                                        "value": "userMJe"
+                                    },
+                                    {
+                                        "name": "MONGODB_PASSWORD",
+                                        "value": "awAk0GFg"
+                                    },
+                                    {
+                                        "name": "MONGODB_DATABASE",
+                                        "value": "ratingdb"
+                                    },
+                                    {
+                                        "name": "MONGODB_ADMIN_PASSWORD",
+                                        "value": "awAk0GFg"
+                                    }
+                                ],
+                                "image": "mongodb",
+                                "imagePullPolicy": "IfNotPresent",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "tcpSocket": {
+                                        "port": 27017
+                                    },
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "rating-mongodb",
+                                "ports": [
+                                    {
+                                        "containerPort": 27017,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/sh",
+                                            "-i",
+                                            "-c",
+                                            "mongo 127.0.0.1:27017/$MONGODB_DATABASE -u $MONGODB_USER -p $MONGODB_PASSWORD --eval=\"quit()\""
+                                        ]
+                                    },
+                                    "failureThreshold": 10,
+                                    "initialDelaySeconds": 3,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "512Mi"
+                                    }
+                                },
+                                "securityContext": {
+                                    "capabilities": {},
+                                    "privileged": false
+                                },
+                                "terminationMessagePath": "/dev/termination-log",
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/var/lib/mongodb/data",
+                                        "name": "mongodb-data"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 30,
+                        "volumes": [
+                            {
+                                "emptyDir": {},
+                                "name": "mongodb-data"
+                            }
+                        ]
+                    }
+                },
+                "test": false,
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "rating-mongodb"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "mongodb:3.2",
+                                "namespace": "openshift"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "data": {
+                "rating-config.yaml": "rating.http.port: 8080\nconnection_string: mongodb://rating-mongodb:27017\ndb_name: ratingdb\nusername: userMJe\npassword: awAk0GFg"
+            },
+            "kind": "ConfigMap",
+            "metadata": {
+                "labels": {
+                    "app": "rating",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "rating-config"
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "cart",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "cart"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "app": "cart",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "cart"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "cart:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "cart-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "redhat-openjdk18-openshift:1.1",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "cart",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "cart"
+            },
+            "spec": {
+                "replicas": 1,
+                "selector": {
+                    "deploymentconfig": "cart"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "cart",
+                            "deploymentconfig": "cart"
+                        },
+                        "name": "cart"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "CATALOG_ENDPOINT",
+                                        "value": "http://catalog:8080"
+                                    },
+                                    {
+                                        "name": "PRICING_ENDPOINT",
+                                        "value": "http://pricing:8080"
+                                    },
+                                    {
+                                        "name": "KIE_CONTAINER_DEPLOYMENT",
+                                        "value": "CoolStoreRulesContainer=com.redhat:coolstore:2.0.0"
+                                    },
+                                    {
+                                        "name": "KIE_SERVER_USER",
+                                        "value": "brmsAdmin"
+                                    },
+                                    {
+                                        "name": "KIE_SERVER_PASSWORD",
+                                        "value": "pAYnwK5!"
+                                    }
+                                ],
+                                "image": "cart",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "cart",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8443,
+                                        "name": "https",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "1Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "200Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "cart"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "cart:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "cart",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "cart"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "cart"
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "pricing"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "pricing"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "pricing:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "pricing-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "KIE_CONTAINER_DEPLOYMENT",
+                                "value": "CoolStoreRulesContainer=com.redhat:coolstore:2.0.0"
+                            },
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "jboss-decisionserver64-openshift:1.0",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "pricing"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "deploymentconfig": "pricing"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "application": "pricing",
+                            "deploymentconfig": "pricing"
+                        },
+                        "name": "pricing"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "MQ_CLUSTER_PASSWORD",
+                                        "value": "7mzX0pLV03"
+                                    },
+                                    {
+                                        "name": "JGROUPS_CLUSTER_PASSWORD",
+                                        "value": "CqUo3fYDTv"
+                                    },
+                                    {
+                                        "name": "AUTO_DEPLOY_EXPLODED",
+                                        "value": "false"
+                                    },
+                                    {
+                                        "name": "KIE_CONTAINER_DEPLOYMENT",
+                                        "value": "CoolStoreRulesContainer=com.redhat:coolstore:2.0.0"
+                                    },
+                                    {
+                                        "name": "KIE_SERVER_USER",
+                                        "value": "brmsAdmin"
+                                    },
+                                    {
+                                        "name": "KIE_SERVER_PASSWORD",
+                                        "value": "pAYnwK5!"
+                                    },
+                                    {
+                                        "name": "OPENSHIFT_KUBE_PING_LABELS",
+                                        "value": "application=pricing-service"
+                                    },
+                                    {
+                                        "name": "OPENSHIFT_KUBE_PING_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "image": "pricing",
+                                "imagePullPolicy": "Always",
+                                "lifecycle": {
+                                    "preStop": {
+                                        "exec": {
+                                            "command": [
+                                                "/opt/eap/bin/jboss-cli.sh",
+                                                "-c",
+                                                ":shutdown(timeout=60)"
+                                            ]
+                                        }
+                                    }
+                                },
+                                "livenessProbe": {
+                                    "failureThreshold": 5,
+                                    "httpGet": {
+                                        "path": "/kie-server/docs/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 120,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 5
+                                },
+                                "name": "pricing",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8888,
+                                        "name": "ping",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/kie-server/docs/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 15,
+                                    "periodSeconds": 5,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "600Mi"
+                                    },
+                                    "requests": {
+                                        "memory": "200Mi"
+                                    }
+                                },
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "pricing"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "pricing:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "description": "The pricing service's http port."
+                },
+                "labels": {
+                    "app": "pricing",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "pricing"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "pricing"
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "review",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review"
+            },
+            "spec": {
+                "tags": [
+                    {
+                        "name": "latest"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "labels": {
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review"
+            },
+            "spec": {
+                "output": {
+                    "to": {
+                        "kind": "ImageStreamTag",
+                        "name": "review:latest"
+                    }
+                },
+                "source": {
+                    "contextDir": "review-service",
+                    "git": {
+                        "ref": "stable-ocp-3.11",
+                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "sourceStrategy": {
+                        "env": [
+                            {
+                                "name": "MAVEN_MIRROR_URL",
+                                "value": ""
+                            }
+                        ],
+                        "from": {
+                            "kind": "ImageStreamTag",
+                            "name": "redhat-openjdk18-openshift:1.1",
+                            "namespace": "openshift"
+                        }
+                    },
+                    "type": "Source"
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChange": {},
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "review",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "deploymentconfig": "review"
+                },
+                "strategy": {
+                    "resources": {},
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "review",
+                            "deploymentconfig": "review"
+                        },
+                        "name": "review"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "KUBERNETES_NAMESPACE",
+                                        "valueFrom": {
+                                            "fieldRef": {
+                                                "fieldPath": "metadata.namespace"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "JAVA_OPTIONS",
+                                        "value": "-Dswarm.project.stage=production -Dswarm.project.stage.file=file:///app/config/review-config.yml"
+                                    }
+                                ],
+                                "image": "review",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "failureThreshold": 2,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 60,
+                                    "periodSeconds": 10,
+                                    "successThreashold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "review",
+                                "ports": [
+                                    {
+                                        "containerPort": 8778,
+                                        "name": "jolokia",
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "name": "http",
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 3,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 10,
+                                    "periodSeconds": 10,
+                                    "successThreashold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {
+                                    "limits": {
+                                        "memory": "1Gi"
+                                    },
+                                    "requests": {
+                                        "memory": "200Mi"
+                                    }
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/app/config",
+                                        "name": "config"
+                                    }
+                                ]
+                            }
+                        ],
+                        "dnsPolicy": "ClusterFirst",
+                        "restartPolicy": "Always",
+                        "securityContext": {},
+                        "terminationGracePeriodSeconds": 75,
+                        "terminationMessagePath": "/dev/termination-log",
+                        "volumes": [
+                            {
+                                "configMap": {
+                                    "items": [
+                                        {
+                                            "key": "review-config.yml",
+                                            "path": "review-config.yml"
+                                        }
+                                    ],
+                                    "name": "review-config"
+                                },
+                                "name": "config"
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "review"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "review:latest"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "service.alpha.openshift.io/dependencies": "[{\"name\":\"review-postgresql\",\"namespace\":\"\",\"kind\":\"Service\"}]"
+                },
+                "labels": {
+                    "app": "review",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "review"
+                }
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "review",
+                    "comp-type": "database",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review-postgresql"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "deploymentconfig": "review-postgresql"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "review",
+                            "comp-type": "database",
+                            "deploymentconfig": "review-postgresql"
+                        },
+                        "name": "review-postgresql"
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "env": [
+                                    {
+                                        "name": "POSTGRESQL_USER",
+                                        "value": "userNmm"
+                                    },
+                                    {
+                                        "name": "POSTGRESQL_PASSWORD",
+                                        "value": "xKXrOS5R"
+                                    },
+                                    {
+                                        "name": "POSTGRESQL_DATABASE",
+                                        "value": "review"
+                                    }
+                                ],
+                                "image": "postgresql",
+                                "imagePullPolicy": "Always",
+                                "livenessProbe": {
+                                    "initialDelaySeconds": 30,
+                                    "tcpSocket": {
+                                        "port": 5432
+                                    },
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "review-postgresql",
+                                "ports": [
+                                    {
+                                        "containerPort": 5432,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "exec": {
+                                        "command": [
+                                            "/bin/sh",
+                                            "-i",
+                                            "-c",
+                                            "psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'"
+                                        ]
+                                    },
+                                    "initialDelaySeconds": 5,
+                                    "timeoutSeconds": 1
+                                },
+                                "volumeMounts": [
+                                    {
+                                        "mountPath": "/var/lib/pgsql/data",
+                                        "name": "review-postgresql-data"
+                                    }
+                                ]
+                            }
+                        ],
+                        "terminationGracePeriodSeconds": 60,
+                        "volumes": [
+                            {
+                                "emptyDir": {},
+                                "name": "review-postgresql-data"
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "review-postgresql"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "postgresql:latest",
+                                "namespace": "openshift"
+                            }
+                        },
+                        "type": "ImageChange"
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "review",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review-postgresql"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "port": 5432,
+                        "targetPort": 5432
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "review-postgresql"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "data": {
+                "review-config.yml": "project:\n  stage: production\nswarm:\n  datasources:\n    data-sources:\n      ReviewDS:\n        driver-name: postgresql\n        connection-url: jdbc:postgresql://review-postgresql:5432/review\n        user-name: userNmm\n        password: xKXrOS5R"
+            },
+            "kind": "ConfigMap",
+            "metadata": {
+                "labels": {
+                    "app": "review",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "review-config"
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "turbine-server"
+            },
+            "spec": {
+                "dockerImageRepository": "docker.io/siamaksade/turbine-server",
+                "tags": [
+                    {
+                        "annotations": {
+                            "description": "Fabric8 Turbine Server",
+                            "version": "1.0.27"
+                        },
+                        "name": "1.0.27"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "turbine-server"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "deploymentconfig": "turbine-server"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "netflix",
+                            "component": "turbine-server",
+                            "deploymentconfig": "turbine-server"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "image": "turbine-server",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 60,
+                                    "periodSeconds": 30,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "turbine-server",
+                                "ports": [
+                                    {
+                                        "containerPort": 8080,
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8778,
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 9779,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/health",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {},
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "turbine-server"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "turbine-server:1.0.27"
+                            }
+                        },
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "turbine-server"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "80-tcp",
+                        "port": 80,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "deploymentconfig": "turbine-server"
+                }
+            }
+        },
+        {
+            "apiVersion": "route.openshift.io/v1",
+            "kind": "Route",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "turbine-server",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "turbine-server"
+            },
+            "spec": {
+                "port": {
+                    "targetPort": "8080-tcp"
+                },
+                "to": {
+                    "kind": "Service",
+                    "name": "turbine-server",
+                    "weight": 100
+                }
+            }
+        },
+        {
+            "apiVersion": "image.openshift.io/v1",
+            "kind": "ImageStream",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "hystrix-dashboard"
+            },
+            "spec": {
+                "dockerImageRepository": "docker.io/siamaksade/hystrix-dashboard",
+                "tags": [
+                    {
+                        "annotations": {
+                            "description": "Fabric8 Hystrix Dashboard",
+                            "version": "1.0.27"
+                        },
+                        "name": "1.0.27"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "apps.openshift.io/v1",
+            "kind": "DeploymentConfig",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "hystrix-dashboard"
+            },
+            "spec": {
+                "replicas": 0,
+                "selector": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "deploymentconfig": "hystrix-dashboard"
+                },
+                "strategy": {
+                    "type": "Recreate"
+                },
+                "template": {
+                    "metadata": {
+                        "labels": {
+                            "app": "netflix",
+                            "component": "hystrix-dashboard",
+                            "deploymentconfig": "hystrix-dashboard"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "image": "hystrix-dashboard",
+                                "livenessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "name": "hystrix-dashboard",
+                                "ports": [
+                                    {
+                                        "containerPort": 9779,
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8080,
+                                        "protocol": "TCP"
+                                    },
+                                    {
+                                        "containerPort": 8778,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "readinessProbe": {
+                                    "failureThreshold": 10,
+                                    "httpGet": {
+                                        "path": "/",
+                                        "port": 8080,
+                                        "scheme": "HTTP"
+                                    },
+                                    "initialDelaySeconds": 30,
+                                    "periodSeconds": 10,
+                                    "successThreshold": 1,
+                                    "timeoutSeconds": 1
+                                },
+                                "resources": {},
+                                "terminationMessagePath": "/dev/termination-log"
+                            }
+                        ]
+                    }
+                },
+                "triggers": [
+                    {
+                        "type": "ConfigChange"
+                    },
+                    {
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "hystrix-dashboard"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "name": "hystrix-dashboard:1.0.27"
+                            }
+                        },
+                        "type": "ImageChange"
+                    }
+                ]
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "annotations": {
+                    "service.alpha.openshift.io/dependencies": "[{\"name\":\"turbine-server\",\"namespace\":\"\",\"kind\":\"Service\"}]"
+                },
+                "labels": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "hystrix-dashboard"
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "8080-tcp",
+                        "port": 8080,
+                        "protocol": "TCP",
+                        "targetPort": 8080
+                    }
+                ],
+                "selector": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "deploymentconfig": "hystrix-dashboard"
+                }
+            }
+        },
+        {
+            "apiVersion": "route.openshift.io/v1",
+            "kind": "Route",
+            "metadata": {
+                "labels": {
+                    "app": "netflix",
+                    "component": "hystrix-dashboard",
+                    "demo": "coolstore-microservice",
+                    "template": "coolstore"
+                },
+                "name": "hystrix-dashboard"
+            },
+            "spec": {
+                "port": {
+                    "targetPort": "8080-tcp"
+                },
+                "to": {
+                    "kind": "Service",
+                    "name": "hystrix-dashboard",
+                    "weight": 100
+                }
+            }
+        }
+    ]
+}
