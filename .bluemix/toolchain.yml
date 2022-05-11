@@ -43,8 +43,8 @@ services:
       }
     parameters:
       repo_name: "openshift-demo-app-{{timestamp}}"
-      repo_url: "https://github.ibm.com/ageiger/openshift-demo-app"
-      source_repo_url: "https://github.ibm.com/ageiger/openshift-demo-app"
+      repo_url: "https://github.com/aquavoyager/coolstore"
+      source_repo_url: "https://github.com/aquavoyager/coolstore"
       type: $env.type || 'clone'
       has_issues: true
       enable_traceability: true
