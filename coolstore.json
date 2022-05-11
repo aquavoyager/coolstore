@@ -83,7 +83,7 @@
                         ],
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "nodejs:4",
+                            "name": "nodejs:latest",
                             "namespace": "openshift"
                         }
                     },
