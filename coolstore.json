@@ -64,8 +64,8 @@
                 "source": {
                     "contextDir": "coolstore-ui",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -283,8 +283,8 @@
                 "source": {
                     "contextDir": "coolstore-gw",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -495,8 +495,8 @@
                 "source": {
                     "contextDir": "inventory-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -897,8 +897,8 @@
                 "source": {
                     "contextDir": "catalog-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -1241,7 +1241,7 @@
                             ],
                             "from": {
                                 "kind": "ImageStreamTag",
-                                "name": "mongodb:3.2",
+                                "name": "mongodb:3.6",
                                 "namespace": "openshift"
                             }
                         },
@@ -1292,8 +1292,8 @@
                 "source": {
                     "contextDir": "rating-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -1648,7 +1648,7 @@
                             ],
                             "from": {
                                 "kind": "ImageStreamTag",
-                                "name": "mongodb:3.2",
+                                "name": "mongodb:3.6",
                                 "namespace": "openshift"
                             }
                         },
@@ -1715,8 +1715,8 @@
                 "source": {
                     "contextDir": "cart-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -1943,8 +1943,8 @@
                 "source": {
                     "contextDir": "pricing-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
@@ -2205,8 +2205,8 @@
                 "source": {
                     "contextDir": "review-service",
                     "git": {
-                        "ref": "stable-ocp-3.11",
-                        "uri": "https://github.com/jbossdemocentral/coolstore-microservice"
+                        "ref": "main",
+                        "uri": "https://github.com/aquavoyager/coolstore"
                     },
                     "type": "Git"
                 },
