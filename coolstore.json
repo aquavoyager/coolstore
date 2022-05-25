@@ -235,7 +235,8 @@
             "metadata": {
                 "labels": {
                     "demo": "coolstore-microservice",
-                    "template": "coolstore"
+                    "template": "coolstore",
+                    "router": "default"
                 },
                 "name": "web-ui"
             },
@@ -444,7 +445,8 @@
                 "labels": {
                     "app": "coolstore-gw",
                     "demo": "coolstore-microservice",
-                    "template": "coolstore"
+                    "template": "coolstore",
+                    "router": "default"
                 },
                 "name": "coolstore-gw"
             },
@@ -2715,7 +2717,8 @@
                     "app": "netflix",
                     "component": "turbine-server",
                     "demo": "coolstore-microservice",
-                    "template": "coolstore"
+                    "template": "coolstore",
+                    "router": "default"
                 },
                 "name": "turbine-server"
             },
@@ -2893,7 +2896,8 @@
                     "app": "netflix",
                     "component": "hystrix-dashboard",
                     "demo": "coolstore-microservice",
-                    "template": "coolstore"
+                    "template": "coolstore",
+                    "router": "default"
                 },
                 "name": "hystrix-dashboard"
             },
